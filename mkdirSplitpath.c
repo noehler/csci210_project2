@@ -12,7 +12,7 @@ void mkdir(char pathName[]){
     baseName[0] = '\0';
     dirName[0] = '\0';
 
-    if (pathName == NULL || strlen(pathName) == 0) {
+    if (pathName == NULL || strcmp(pathName, "/") == 0 || strlen(pathName) == 0) {
         printf("MKDIR ERROR: no path provided\n");
         return;
     }
@@ -22,14 +22,9 @@ void mkdir(char pathName[]){
         return;
     }
 
-    if (strlen(baseName) == 0) {
-        printf("MKDIR ERROR: no path provided\n");
-        return;
-    }
-
     temp = parent->childPtr;
     while (temp != NULL) {
-        if (strcmp(temp->name, baseName) == 0) {
+        if (strcmp(temp->name, baseName) == 0 && temp->fileType == 'D') {
             printf("MKDIR ERROR: directory %s already exists\n", baseName);
             return;
         }
@@ -37,6 +32,10 @@ void mkdir(char pathName[]){
     }
 
     newNode = (struct NODE*)malloc(sizeof(struct NODE));
+    if (newNode == NULL) {
+        return;
+    }
+
     strcpy(newNode->name, baseName);
     newNode->fileType = 'D';
     newNode->childPtr = NULL;
@@ -53,36 +52,35 @@ void mkdir(char pathName[]){
         temp->siblingPtr = newNode;
     }
 
-    printf("MKDIR SUCCESS: node %s successfully created\n", baseName);
-    return;
+    printf("MKDIR SUCCESS: node %s successfully created\n", pathName);
 }
 
 //handles tokenizing and absolute/relative pathing options
 struct NODE* splitPath(char* pathName, char* baseName, char* dirName){
-    char tempPath[256];
     char tempDir[256];
+    char tempPath[256];
     char *lastSlash;
     char *token;
     struct NODE *current, *child;
 
-    if (pathName == NULL || strlen(pathName) == 0) {
+    if (pathName == NULL) {
         return NULL;
     }
 
     strcpy(tempPath, pathName);
 
-    lastSlash = strrchr(tempPath, '/');
-
-    if (lastSlash == NULL) {
-        strcpy(baseName, tempPath);
-        strcpy(dirName, "");
-        return cwd;
-    }
-
     if (strcmp(tempPath, "/") == 0) {
         strcpy(dirName, "/");
         strcpy(baseName, "");
         return root;
+    }
+
+    lastSlash = strrchr(tempPath, '/');
+
+    if (lastSlash == NULL) {
+        strcpy(dirName, "");
+        strcpy(baseName, tempPath);
+        return cwd;
     }
 
     if (lastSlash == tempPath) {
@@ -91,9 +89,9 @@ struct NODE* splitPath(char* pathName, char* baseName, char* dirName){
         return root;
     }
 
-    strcpy(baseName, lastSlash + 1);
     *lastSlash = '\0';
     strcpy(dirName, tempPath);
+    strcpy(baseName, lastSlash + 1);
 
     if (dirName[0] == '/') {
         current = root;
